@@ -110,17 +110,61 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
+        board.setViewingPerspective(side);
+        int top_row = board.size()-1;
+        /* Iterate form top to bottom. */
+        for (int i=board.size()-1; i >=0 ; i--){
+            /* This is the current top row, once two blocks are merged, the top row will change. */
+            top_row = board.size()-1;
+            for (int j=board.size()-1; j >=0 ; j--){
+                /* Tiles on the top will never move. */
+                if (j == board.size()-1 || board.tile(i, j) == null) { continue; }
+                Tile t = board.tile(i, j);
+                int row_to_move = upIsClear(t, top_row);
+                boolean canBeMerged = canBeMerged(t, row_to_move, top_row);
+                if (canBeMerged) {
+                    board.move(i, t.row()+row_to_move+1, t);
+                    top_row = t.row()+row_to_move;
+                    score += board.tile(i,t.row()+row_to_move+1).value();
+                    changed = true;
+                } else{
+                    board.move(i, t.row()+row_to_move, t);
+                    changed = true;
+                }
+
+
+            }
+        }
 
         checkGameOver();
         if (changed) {
             setChanged();
         }
+        board.setViewingPerspective(Side.NORTH);
         return changed;
     }
 
+    /* Return how many tiles above this tile are empty */
+    private int upIsClear(Tile t, int top_row){
+        int i = t.col();
+        System.out.println(i);
+        for (int j=t.row(); j<= top_row; j++){
+            if (j == t.row()) { continue; }
+            if (board.tile(i, j) != null) {
+                //System.out.println("yo");
+                return j-t.row()-1; }
+        }
+        return top_row-t.row();  /* There's no tile above it. */
+    }
+
+    /* Return if the tile can be merged with the tile above it. */
+    private boolean canBeMerged(Tile t, int row_to_move, int top_row){
+        int expected_row = t.row() + row_to_move;
+        //System.out.println(expected_row);
+        if (expected_row == top_row) { return false; }
+        Tile t_above = board.tile(t.col(), expected_row+1);
+        return t.value() == t_above.value();
+    }
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
